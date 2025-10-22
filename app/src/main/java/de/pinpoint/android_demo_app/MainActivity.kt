@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.easylocate.sdk.android.service.EasyLocateSdk
 import de.easylocate.sdk.android.service.UwbServiceExplorer
-import de.pinpoint.android_demo_app.BuildConfig
+
 
 
 class MainActivity : ComponentActivity() {
@@ -131,7 +131,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 Button(
                     onClick = {
                         if (isConnected) viewModel.disconnect()
-                        else viewModel.connect()
+                        else viewModel.startScan()
                     },
                     enabled = !isConnecting,
                     modifier = Modifier

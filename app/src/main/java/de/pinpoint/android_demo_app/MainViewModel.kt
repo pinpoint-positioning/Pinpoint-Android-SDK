@@ -152,7 +152,7 @@ class MainViewModel : ViewModel() {
 
 
     // Start the connection process
-    fun connect() {
+    fun startScan() {
         val api = traceletApi ?: run {
             Log.d(TAG, "Tracelet API not ready yet")
             return
