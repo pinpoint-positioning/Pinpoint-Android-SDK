@@ -15,14 +15,12 @@ import de.easylocate.mobile.api.TraceletApi
 import de.easylocate.mobile.data.coords.Wgs84Reference
 import de.easylocate.mobile.data.position.PositionLocal
 import de.easylocate.mobile.data.position.PositionWgs84
-import de.easylocate.sdk.android.hw.uwb.FiraPositioningApi
 import de.easylocate.sdk.android.service.EasyLocateSdk
 import de.easylocate.sdk.android.service.UwbServiceExplorer
 
 class MainViewModel : ViewModel() {
     var isConnecting by mutableStateOf(false)
     var isConnected by mutableStateOf(false)
-    var uwbType = UwbServiceExplorer.UwbType.NONE
 
     var localX by mutableDoubleStateOf(0.0)
     var localY by mutableDoubleStateOf(0.0)
@@ -38,17 +36,17 @@ class MainViewModel : ViewModel() {
 
     var traceletApi: TraceletApi? = null
 
+    private var uwbType = UwbServiceExplorer.UwbType.NONE
+    private val TAG = "MainViewModel"
+
     // SDK Event Listener
     val sdkEventListener = object : EasyLocateSdk.EventListener {
-        private val TAG = "MainViewModel"
 
-        override fun onTraceletApiReady(api: TraceletApi) {
-            traceletApi = api
-            api.registerEventListener(satletScanListener)
-            api.registerEventListener(elApiEventListener)
+        override fun onTraceletApiReady(traceletApi: TraceletApi) {
+            this@MainViewModel.traceletApi = traceletApi
+            traceletApi.registerEventListener(elApiEventListener)
 
-
-            Log.d(TAG, "✅ Tracelet API is ready: $api")
+            Log.d(TAG, "Tracelet API is ready: $traceletApi")
         }
 
         override fun onMissingRights(missingRights: List<String>) {
@@ -57,35 +55,49 @@ class MainViewModel : ViewModel() {
     }
 
     private val elApiEventListener = object : ApiEventListener {
+        // Receives all scan BLE scan results
         override fun onDeviceScanResults(easyLocateDevices: List<EasyLocateBleDevice>) {}
+
+        // Receives TRACElet settings from BLE OOB scan
         override fun onOOBConfigResults(config: OobConfigData) {
-            traceletApi?.setRadioSettings(uwbChannel = config.channel, preamble = config.preamble)
+            Log.d(TAG, "Received OOB Config: $config")
+            if (config.channel != 0) {
+                traceletApi?.setRadioSettings(config.channel, config.preamble)
+            }
         }
+
+        // Receives a single TRACElet that is close to the phone
         override fun onDeviceApproached(device: EasyLocateBleDevice) {
             traceletApi?.connectDevice(device.deviceAddress)
-            Log.d("MainViewModel", "Device approached: ${device.deviceAddress}")
+            Log.d(TAG, "Device approached: ${device.deviceAddress}")
             isConnected = true
             isConnecting = false
         }
-        override fun onNewApiState(easyLocateState: EasyLocateState) {
-            Log.d("MainViewModel", "New API state: $easyLocateState")
-            when (easyLocateState) {
-                EasyLocateState.CONNECTED -> startPositioning()
-                EasyLocateState.INIT ->  Log.d("MainViewModel", "New API state: $easyLocateState")
-                EasyLocateState.IDLE ->  Log.d("MainViewModel", "New API state: $easyLocateState")
-            }
 
+        // Receives changes in the API state
+        override fun onNewApiState(easyLocateState: EasyLocateState) {
+            Log.d("elApiEventListener", "New API state: $easyLocateState")
+            when (easyLocateState) {
+                // Start Positioning when device is connected
+                EasyLocateState.CONNECTED -> startPositioning()
+                EasyLocateState.INIT ->  Log.d(TAG, "New API state: $easyLocateState")
+                EasyLocateState.IDLE ->  Log.d(TAG, "New API state: $easyLocateState")
+            }
         }
     }
+
+
     fun updateUwbType(type: UwbServiceExplorer.UwbType) {
         uwbType = type
 
     }
 
+    // Light up a LED on the TRACElet
     fun showMe() {
         traceletApi?.showDevice()
     }
 
+    // Start positioning engine on TRACElet or native UWB chip
     fun startPositioning() {
         when (uwbType) {
             UwbServiceExplorer.UwbType.FIRA_20 -> {
@@ -96,7 +108,7 @@ class MainViewModel : ViewModel() {
 
             UwbServiceExplorer.UwbType.NONE -> {
                 Log.d("UWB Type", "Phone does NOT support native UWB positioning")
-                // Radio Settings for BLE TRACElet are configured automatically
+                // Radio Settings for BLE TRACElet are set via onOOBConfigResults()
             }
 
             else -> {
@@ -123,7 +135,7 @@ class MainViewModel : ViewModel() {
 
     private val positionUpdateListener = object : PositionUpdateListener {
         override fun onPositionLocalUpdate(positionLocal: PositionLocal) {
-            Log.d("Position", "New Pos: $positionLocal")
+            Log.d(TAG, "New Pos: $positionLocal")
             localX = positionLocal.x.toDouble()
             localY = positionLocal.y.toDouble()
             localZ = positionLocal.z.toDouble()
@@ -131,48 +143,31 @@ class MainViewModel : ViewModel() {
         }
 
         override fun onPositionWgs84Update(positionWgs84: PositionWgs84) {
-            Log.d("Position", "New WGS85 Pos: $positionWgs84")
+            Log.d(TAG, "New WGS84 Pos: $positionWgs84")
             latitude = positionWgs84.lat
             longitude = positionWgs84.lon
         }
     }
 
-    private val satletScanListener = object : ApiEventListener {
-        override fun onDeviceScanResults(easyLocateDevices: List<EasyLocateBleDevice>) {
-            Log.d("MainViewModel", "Device scan results: $easyLocateDevices")
-        }
-        override fun onOOBConfigResults(config: OobConfigData) {
-            Log.d("MainViewModel", "OOB Config: $config")
-            if (config.channel != 0) {
 
-                traceletApi?.setRadioSettings(config.channel, config.preamble)
-            }
 
-        }
-        override fun onDeviceApproached(device: EasyLocateBleDevice) {
-            traceletApi?.connectDevice(device.deviceAddress)
-        }
-        override fun onNewApiState(easyLocateState: EasyLocateState) {
-            Log.d("MainViewModel", "New API state: $easyLocateState")
-        }
-    }
-
+    // Start the connection process
     fun connect() {
         val api = traceletApi ?: run {
-            Log.d("MainViewModel", "Tracelet API not ready yet")
+            Log.d(TAG, "Tracelet API not ready yet")
             return
         }
-
-        Log.d("MainViewModel", "Starting device scan...")
+        Log.d(TAG, "Starting device scan...")
         isConnecting = true
         isConnected = false
         api.startDeviceScan()
     }
 
+    // Disconnect from device
     fun disconnect() {
         traceletApi?.disconnectDevice()
         isConnected = false
         isConnecting = false
-        Log.d("MainViewModel", "Disconnected")
+        Log.d(TAG, "Disconnected")
     }
 }
