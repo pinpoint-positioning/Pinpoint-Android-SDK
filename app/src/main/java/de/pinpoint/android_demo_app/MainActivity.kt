@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.easylocate.sdk.android.service.EasyLocateSdk
 import de.easylocate.sdk.android.service.UwbServiceExplorer
+import de.pinpoint.android_demo_app.BuildConfig
 
 
 class MainActivity : ComponentActivity() {
@@ -73,7 +74,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val isConnected = viewModel.isConnected
     val context = LocalContext.current
 
-    // --- Get UWB type once when this composable is first shown ---
+    // Get UWB type once when this composable is first shown
+    // Needed to check whether the phone supports native UWB or requires a BLE TRACElet
     LaunchedEffect(Unit) {
         val uwbType = UwbServiceExplorer.checkUwbSupport(context)
         viewModel.updateUwbType(uwbType)
@@ -189,14 +191,27 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
             // Version Footer
             Text(
-                "Version 1.0.0",
+                text = "App v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) " +
+                        "- ${BuildConfig.BUILD_TYPE} - ${BuildConfig.GIT_BRANCH}@${BuildConfig.GIT_COMMIT}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 2.dp),
                 textAlign = TextAlign.Center
             )
+
+            Text(
+                text = "SDK v${BuildConfig.EASYLOCATE_VERSION}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp),
+                textAlign = TextAlign.Center
+            )
+
+
         }
     }
 }
