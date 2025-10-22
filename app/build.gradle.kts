@@ -1,3 +1,5 @@
+val easylocateVersion = "12.1.1"
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,17 +8,27 @@ plugins {
 
 
 android {
-    namespace = "de.pinpoint.android.demo.app"
+    namespace = "de.pinpoint.android_demo_app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "de.pinpoint.android_demo_app"
+        applicationId = "de.pinpoint.android.demo.app"
         minSdk = 34
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "12.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        // Adding custom git info for version display
+        val gitBranch = "git rev-parse --abbrev-ref HEAD".runCommand() ?: "unknown"
+        val gitCommit = "git rev-parse --short HEAD".runCommand() ?: "unknown"
+
+        buildConfigField("String", "GIT_BRANCH", "\"$gitBranch\"")
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
+        // Adding Easylocate Version to BuildConfig
+        buildConfigField("String", "EASYLOCATE_VERSION", "\"$easylocateVersion\"")
     }
 
     buildTypes {
@@ -37,11 +49,25 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
+// Helper function to get git info
+fun String.runCommand(): String? = try {
+    val parts = this.split("\\s".toRegex())
+    val proc = ProcessBuilder(*parts.toTypedArray())
+        .directory(File("."))
+        .redirectOutput(ProcessBuilder.Redirect.PIPE)
+        .redirectError(ProcessBuilder.Redirect.PIPE)
+        .start()
+    proc.inputStream.bufferedReader().readText().trim().takeIf { it.isNotEmpty() }
+} catch (e: Exception) {
+    null
+}
+
+
 dependencies {
-    val easylocateVersion = "12.1.1"
     implementation("de.easylocate:core:$easylocateVersion")
     implementation("de.easylocate:android-sdk:$easylocateVersion")
 
