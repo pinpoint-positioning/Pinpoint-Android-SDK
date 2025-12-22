@@ -1,4 +1,4 @@
-val easylocateVersion = "12.1.1"
+val easylocateVersion = "12.2.0-gamma"
 
 plugins {
     alias(libs.plugins.android.application)

@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.maven
+import org.gradle.kotlin.dsl.repositories
+
 pluginManagement {
     repositories {
         google()
@@ -12,8 +15,14 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         //Add this repo for Pinpoint dependencies
+
         maven {
-            url = uri("https://gitlab.com/api/v4/projects/26571989/packages/maven")
+            url = uri("https://maven.pkg.github.com/pinpoint-positioning/Android-Demo-App")
+            name = "GitHub"
+            credentials {
+                username = "grait"
+                password = "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"
+            }
         }
     }
 }
