@@ -1,4 +1,17 @@
-# Pinpoint iOS SDK
+# Pinpoint Android SDK
+
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Versioning](#versioning)
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
+
 
 ## Introduction
 This Kotlin-based demo application demonstrates how to integrate and use [Pinpoint's](https://pinpoint.de) Android SDK for [FiRa](https://www.firaconsortium.org)-compliant Ultra-Wideband (UWB) positioning.
@@ -25,7 +38,7 @@ This Kotlin-based demo application demonstrates how to integrate and use [Pinpoi
 
 ## Prerequisites
 
-Before integrating the Pinpoint iOS SDK, please ensure you have access to the necessary Pinpoint hardware components.
+Before integrating the Pinpoint Android SDK, please ensure you have access to the necessary Pinpoint hardware components.
 
 The SDK requires compatible **Pinpoint Hardware** for accurate indoor positioning. Depending on your use case, you can use one of the following hardware options:
 
@@ -40,9 +53,17 @@ The SDK requires compatible **Pinpoint Hardware** for accurate indoor positionin
 To ensure optimal performance, confirm that your hardware is correctly installed and configured before running the SDK.
 
 
+## Versioning
+This package highly depends on the Pinpoint Hardware you are using.
+
+Make sure to use the corresponding version when adding this package to your project.
+
+**Current supported version: 12.2.0**
+
+
 ## Installation
 
-1. Add the SDK package source to your `settings.gradle.kts``
+1. Add the SDK package source to your `settings.gradle.kts`.
 
 ```
 dependencyResolutionManagement {
@@ -68,21 +89,23 @@ dependencies {
 ```
 
 
-### Versioning
-This package highly depends in the Pinpoint Hardware you are using.
-
-Make sure to use the corresponding tag (e.g. 12.1.0) when adding this package to your project,
 
 
 ## Usage
 
-To use the `Pinpoint iOS SDK`  in your iOS project, follow the steps below..
+To use the `Pinpoint Kotlin SDK` in your project, follow the steps below.
 
 The provided demo app is this repo can be used as an implementation example for the SDK.
 
-The usage examples below can be found in `PositionProvider.swift` inside the demo app.
+The usage examples below can be found in `MainViewModel.kt` inside the demo app.
 
-1. Create a listener for the SDK
+```kotlin
+   // Initialize SDK
+    easyLocateSdk = EasyLocateSdk(this)
+    easyLocateSdk.start(viewModel.sdkEventListener)
+```
+
+1. **Create a listener for the SDK**
 
 ```kotlin
 
@@ -102,7 +125,7 @@ The usage examples below can be found in `PositionProvider.swift` inside the dem
     }
 ```
 
-2.  Create an `ApiEventListener` to get notified on the relevant events.
+2.  **Create an `ApiEventListener` to get notified on the relevant events.**
 
 ```kotlin
     private val elApiEventListener = object : ApiEventListener {
@@ -134,7 +157,7 @@ The usage examples below can be found in `PositionProvider.swift` inside the dem
 
 ```
 
-3. Start the BLE scan. Scan results will trigger `onDeviceApproached` and `onDeviceScanResults`.
+3. **Start the BLE scan. Scan results will trigger `onDeviceApproached` and `onDeviceScanResults`.**
 
 ```kotlin
     fun startScan() {
@@ -145,7 +168,7 @@ The usage examples below can be found in `PositionProvider.swift` inside the dem
     }
 ```
 
-4. Once a TRACElet is close enough to the phone, it is considered as `approached`. First, connect to it then start the positioning engine. 
+4. **Once a TRACElet is close enough to the phone, it is considered as `approached`. First, connect to it then start the positioning engine.**
 
 ```kotlin
     fun startPositioning() {
@@ -165,12 +188,15 @@ The usage examples below can be found in `PositionProvider.swift` inside the dem
         }
 
         traceletApi?.startPositioning(positionUpdateListener)
+        // Optional: Set the WGS84 references to receive WGS84 coordinates from the callback.
         updateWgs84References()
     }
 ```
+**Note**: `updateWgs84References()` is described below.
 
-5. Create a `PositionUpdateListener` that provides the local position.
-You can set a WGS84 reference to get the local position converted to world coordinates (WGS84).
+
+5. **Create a `PositionUpdateListener` that provides the local position.
+You can set a WGS84 reference to get the local position converted to world coordinates (WGS84).**
 
 ```kotlin
     private val positionUpdateListener = object : PositionUpdateListener {
@@ -188,8 +214,7 @@ You can set a WGS84 reference to get the local position converted to world coord
     }
 ```
 
-
-Set the WGS84 reference.
+6. **Set the WGS84 reference.**
 The WGS84 reference can be set via *EasyPlan*.
 
 ```kotlin
@@ -198,18 +223,16 @@ The WGS84 reference can be set via *EasyPlan*.
             Wgs84Reference(
             latitude = refLatitude,
             longitude = refLongitude,
-            azimuth = refAzimuth
-        )
+            azimuth = refAzimuth)
         )
     }
 ```
-3. Disconnect from Device
+7. **Disconnect from Device**
 
 ```kotlin
     fun disconnect() {
         traceletApi?.disconnectDevice()
     }
-}
 ```
 
 ### License 
