@@ -6,17 +6,17 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import de.easylocate.mobile.api.ApiEventListener
-import de.easylocate.mobile.api.EasyLocateBleDevice
-import de.easylocate.mobile.api.EasyLocateState
-import de.easylocate.mobile.api.OobConfigData
-import de.easylocate.mobile.api.PositionUpdateListener
-import de.easylocate.mobile.api.TraceletApi
-import de.easylocate.mobile.data.coords.Wgs84Reference
-import de.easylocate.mobile.data.position.PositionLocal
-import de.easylocate.mobile.data.position.PositionWgs84
-import de.easylocate.sdk.android.service.EasyLocateSdk
-import de.easylocate.sdk.android.service.UwbServiceExplorer
+import de.pinpoint.mobile.api.ApiEventListener
+import de.pinpoint.mobile.api.EasyLocateBleDevice
+import de.pinpoint.mobile.api.EasyLocateState
+import de.pinpoint.mobile.api.OobConfigData
+import de.pinpoint.mobile.api.PositionUpdateListener
+import de.pinpoint.mobile.api.TraceletApi
+import de.pinpoint.mobile.data.coords.Wgs84Reference
+import de.pinpoint.mobile.data.position.PositionLocal
+import de.pinpoint.mobile.data.position.PositionWgs84
+import de.pinpoint.sdk.android.service.EasyLocateSdk
+import de.pinpoint.sdk.android.service.UwbServiceExplorer
 
 class MainViewModel : ViewModel() {
     var isConnecting by mutableStateOf(false)

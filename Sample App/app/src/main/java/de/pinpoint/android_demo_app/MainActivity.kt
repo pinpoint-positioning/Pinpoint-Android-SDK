@@ -31,8 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import de.easylocate.sdk.android.service.EasyLocateSdk
-import de.easylocate.sdk.android.service.UwbServiceExplorer
+import de.pinpoint.sdk.android.service.EasyLocateSdk
+import de.pinpoint.sdk.android.service.UwbServiceExplorer
 
 
 

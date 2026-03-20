@@ -1,22 +1,24 @@
-val easylocateVersion = "12.2.0-gamma"
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+val easylocateVersion = "12.2.0"
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.android.application) version "8.8.0"
+    alias(libs.plugins.kotlin.android) version "2.3.20"
+    alias(libs.plugins.kotlin.compose) version "2.3.20"
 }
 
 
 android {
     namespace = "de.pinpoint.android_demo_app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "de.pinpoint.android.demo.app"
-        minSdk = 34
-        targetSdk = 35
+        minSdk = 29
+        targetSdk = 36
         versionCode = 1
-        versionName = "12.1"
+        versionName = "12.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -41,12 +43,15 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -68,8 +73,8 @@ fun String.runCommand(): String? = try {
 
 
 dependencies {
-    implementation("de.easylocate:core:$easylocateVersion")
-    implementation("de.easylocate:android-sdk:$easylocateVersion")
+    implementation("de.pinpoint.android:core:$easylocateVersion")
+    implementation("de.pinpoint.android:sdk:$easylocateVersion")
 
     implementation(platform(libs.androidx.compose.bom.v20240600))
     // Activity Compose
