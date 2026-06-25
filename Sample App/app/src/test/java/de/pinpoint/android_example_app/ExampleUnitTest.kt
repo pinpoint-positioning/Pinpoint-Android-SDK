@@ -1,4 +1,4 @@
-package de.pinpoint.android_demo_app
+package de.pinpoint.android_example_app
 
 import org.junit.Test
 

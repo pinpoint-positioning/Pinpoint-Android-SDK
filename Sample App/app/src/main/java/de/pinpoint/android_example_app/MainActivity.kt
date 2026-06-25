@@ -1,6 +1,7 @@
-package de.pinpoint.android_demo_app
+package de.pinpoint.android_example_app
 
 import android.os.Bundle
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,41 +29,129 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import de.easylocate.sdk.android.service.EasyLocateSdk
-import de.easylocate.sdk.android.service.UwbServiceExplorer
-
+import android.os.Build
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import de.pinpoint.sdk.api.PinpointLicensingCallback
+import de.pinpoint.sdk.api.PinpointLocationServices.getPinpointLocationProviderClient
+import kotlin.time.Duration.Companion.seconds
 
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
-    private lateinit var easyLocateSdk: EasyLocateSdk
+    private val openDocumentLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let {
+                contentResolver.openInputStream(uri)?.use { input ->
+                    viewModel.binFile = input.readBytes()
+                    // Try to get filename
+                    contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1) {
+                            cursor.moveToFirst()
+                            viewModel.binFileName = cursor.getString(nameIndex)
+                        }
+                    }
+                }
+            }
+        }
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val allGranted = permissions.all { it.value }
+            if (allGranted) {
+                Log.d("MainActivity", "All permissions granted")
+            } else {
+                Log.e("MainActivity", "Permissions denied: ${permissions.filter { !it.value }.keys}")
+            }
+        }
+
+    private fun requestRequiredPermissions() {
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.RANGING,
+            Manifest.permission.FOREGROUND_SERVICE,
+            Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        requestPermissionLauncher.launch(permissions.toTypedArray())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        requestRequiredPermissions()
 
-        // Initialize SDK here
-        easyLocateSdk = EasyLocateSdk(this)
-        easyLocateSdk.start(viewModel.sdkEventListener)
+        val licensingCallback = object: PinpointLicensingCallback() {
 
-        setContent {
-            MaterialTheme {
-                MainScreen(viewModel)
+            val TAG = "PinpointLicensingCallback"
+            /**
+             *  This function is called when the offline tokens are expired
+             */
+            override fun onTokenExpired() {
+                Log.e(TAG, "Token expired")
+                viewModel.stopPositioning()
             }
+
+            /**
+             * This function is called 2 days before the token is expiring
+             * @param expiringIn: the duration in seconds from now when the licensing tokens are expiring
+             */
+            override fun onTokenExpiringSoon(expiringIn: Long) {
+                Log.w(TAG,"Token expiring in ${expiringIn.seconds}")
+            }
+
         }
+        getPinpointLocationProviderClient(
+            this,
+            BuildConfig.PINPOINT_API_KEY,
+            licensingCallback
+        ).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Log.i("onComplete","Set indoorClient")
+                // do something with the client
+                val client = task.result
+                viewModel.setIndoorClient(client)
+                viewModel.openDocumentLauncher = openDocumentLauncher
+                setContent {
+                    MaterialTheme {
+                        MainScreen(viewModel)
+                    }
+                }
+
+
+            } else {
+                Log.w("getPinpointLocationProviderClient", "Received error ${task.exception}")
+            }
+
+
+        }
+
+
+
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        easyLocateSdk.stop()
+        viewModel.stopPositioning()
     }
 }
-
-
 
 
 // --------------------------------------------------
@@ -70,24 +160,16 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
-    val isConnecting = viewModel.isConnecting
-    val isConnected = viewModel.isConnected
-    val context = LocalContext.current
 
-    // Get UWB type once when this composable is first shown
-    // Needed to check whether the phone supports native UWB or requires a BLE TRACElet
-    LaunchedEffect(Unit) {
-        val uwbType = UwbServiceExplorer.checkUwbSupport(context)
-        viewModel.updateUwbType(uwbType)
-    }
 
+    var showStartSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Pinpoint Positioning",
+                        "Pinpoint SDK Example App",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -107,16 +189,17 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Connection Status Banner
-            ConnectionStatusBanner(isConnected = isConnected, isConnecting = isConnecting)
+            ConnectionStatusBanner(
+                isConnected = viewModel.isConnected,
+                isConnecting = viewModel.isConnecting
+            )
 
             // Local Position Card
             PositionCard(
                 title = "Local Position",
                 icon = Icons.Default.Place,
-                isConnected = isConnected,
                 localX = viewModel.localX,
                 localY = viewModel.localY,
-                localZ = viewModel.localZ,
                 localAccuracy = viewModel.localAcc
             )
 
@@ -130,40 +213,36 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 // Connect/Disconnect Button
                 Button(
                     onClick = {
-                        if (isConnected) viewModel.disconnect()
-                        else viewModel.startScan()
+                        if (!viewModel.isConnected && !viewModel.isConnecting) {
+                            showStartSheet = true
+                        } else {
+                            viewModel.stopPositioning()
+                        }
                     },
-                    enabled = !isConnecting,
+                    enabled = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isConnected)
+                        containerColor = if (viewModel.isConnected)
                             MaterialTheme.colorScheme.error
                         else
                             MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    if (isConnecting) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Connecting...")
-                    } else {
-                        Text(
-                            if (isConnected) "Disconnect" else "Connect to TRACElet",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+
+
+                    Text(
+                        if (viewModel.isConnected || viewModel.isConnecting) "Stop Positioning" else "Start Positioning",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+
                 }
 
                 // Show Me Button
-                if (isConnected) {
+                if (viewModel.isConnected) {
                     FilledTonalButton(
-                        onClick = {viewModel.showMe()},
+                        onClick = { viewModel.showMe() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
@@ -180,11 +259,12 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         )
                     }
                 }
-
-                // Info Card
-                InfoCard(
-                    text = "Hold your TRACElet close to your phone when connecting"
-                )
+                if (!viewModel.isUwbNative) {
+                    // Info Card
+                    InfoCard(
+                        text = "Hold your TRACElet close to your phone."
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
@@ -202,7 +282,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             )
 
             Text(
-                text = "SDK v${BuildConfig.EASYLOCATE_VERSION}",
+                text = "SDK v${BuildConfig.PINPOINT_SDK_VERSION}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
@@ -212,6 +292,83 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             )
 
 
+        }
+    }
+
+    if (showStartSheet) {
+        StartPositioningSheet(
+            viewModel = viewModel,
+            onDismiss = { showStartSheet = false },
+            onStart = { siteId, binFile ->
+                showStartSheet = false
+                viewModel.startPositioning(Looper.getMainLooper(), siteId, binFile)
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StartPositioningSheet(
+    viewModel: MainViewModel,
+    onDismiss: () -> Unit,
+    onStart: (Int, ByteArray) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var siteId by remember { mutableStateOf(viewModel.siteId) }
+    val binFile = viewModel.binFile
+    val binFileName = viewModel.binFileName
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text("Start Positioning", style = MaterialTheme.typography.titleLarge)
+
+            OutlinedTextField(
+                value = siteId,
+                onValueChange = {
+                    val filtered = it.filter { c -> c.isDigit() || c.lowercaseChar() in 'a'..'f' }
+                    if (filtered.length <= 8) {
+                        siteId = filtered
+                        viewModel.siteId = filtered
+                    }
+                },
+                label = { Text("Site ID (Hex)") },
+                prefix = { Text("0x") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                onClick = { viewModel.openDocumentLauncher.launch(arrayOf("*/*")) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (binFileName != null) "Selected: $binFileName" else "Select BIN File")
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    val id = siteId.toLongOrNull(16)?.toInt() ?: 0
+                    if (binFile != null) {
+                        onStart(id, binFile)
+                    }
+                },
+                enabled = binFile != null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Start")
+            }
         }
     }
 }
@@ -264,10 +421,8 @@ fun ConnectionStatusBanner(isConnected: Boolean, isConnecting: Boolean) {
 fun PositionCard(
     title: String,
     icon: ImageVector,
-    isConnected: Boolean,
     localX: Double,
     localY: Double,
-    localZ: Double,
     localAccuracy: Double
 ) {
     ElevatedCard(
@@ -306,7 +461,6 @@ fun PositionCard(
             ) {
                 CoordinateView("X", localX, Modifier.weight(1f))
                 CoordinateView("Y", localY, Modifier.weight(1f))
-                CoordinateView("Z", localZ, Modifier.weight(1f))
             }
 
             // Accuracy Banner
@@ -407,7 +561,7 @@ fun Wgs84Card(viewModel: MainViewModel) {
                 }
             }
 
-            Divider()
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CoordinateRow("Latitude", viewModel.latitude.toString())
@@ -465,7 +619,6 @@ fun Wgs84Card(viewModel: MainViewModel) {
                         viewModel.refLatitude = latitude.toDouble()
                         viewModel.refLongitude = longitude.toDouble()
                         viewModel.refAzimuth = azi.toDouble()
-                        viewModel.updateWgs84References()
                         showSheet = false
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -476,8 +629,6 @@ fun Wgs84Card(viewModel: MainViewModel) {
         }
     }
 }
-
-
 
 
 @Composable

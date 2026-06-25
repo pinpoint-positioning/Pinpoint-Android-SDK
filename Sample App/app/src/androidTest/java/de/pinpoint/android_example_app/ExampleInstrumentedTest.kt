@@ -1,4 +1,4 @@
-package de.pinpoint.android_demo_app
+package de.pinpoint.android_example_app
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

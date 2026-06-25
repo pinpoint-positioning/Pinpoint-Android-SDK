@@ -1,4 +1,4 @@
-package de.pinpoint.android_demo_app.ui.theme
+package de.pinpoint.android_example_app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -58,7 +58,7 @@ This package highly depends on the Pinpoint Hardware you are using.
 
 Make sure to use the corresponding version when adding this package to your project.
 
-**Current supported version: 12.2.0**
+**Current supported version: 12.2.0-gamma**
 
 
 ## Installation
@@ -71,9 +71,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+
         //Add this repo for Pinpoint dependencies
         maven {
-            url = uri("https://gitlab.com/api/v4/projects/26571989/packages/maven")
+            url = uri("https://maven.pkg.github.com/pinpoint-positioning/Pinpoint-Android-SDK")
+            name = "GitHub"
         }
     }
 }

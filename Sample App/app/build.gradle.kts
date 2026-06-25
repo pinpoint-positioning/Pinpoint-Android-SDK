@@ -1,4 +1,7 @@
-val easylocateVersion = "12.2.0-gamma"
+import java.io.FileInputStream
+import java.util.Properties
+
+val pinpointSdkVersion = "15.0.0"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -6,17 +9,24 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
 
 android {
-    namespace = "de.pinpoint.android_demo_app"
-    compileSdk = 35
+
+    namespace = "de.pinpoint.android_example_app"
+    compileSdk = 37
 
     defaultConfig {
-        applicationId = "de.pinpoint.android.demo.app"
-        minSdk = 34
-        targetSdk = 35
-        versionCode = 1
-        versionName = "12.1"
+        applicationId = "de.pinpoint.android.example.app"
+        minSdk = 29
+        targetSdk = 37
+        versionCode = 2
+        versionName = "15.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -27,13 +37,17 @@ android {
 
         buildConfigField("String", "GIT_BRANCH", "\"$gitBranch\"")
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
-        // Adding Easylocate Version to BuildConfig
-        buildConfigField("String", "EASYLOCATE_VERSION", "\"$easylocateVersion\"")
+        buildConfigField("String", "PINPOINT_SDK_VERSION", "\"$pinpointSdkVersion\"")
+        buildConfigField(
+            "String",
+            "PINPOINT_API_KEY",
+            "\"${localProperties.getProperty("PINPOINT_API_KEY")}\""
+        )
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,16 +55,19 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+
     buildFeatures {
         compose = true
         buildConfig = true
     }
+    compileSdkMinor = 0
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 // Helper function to get git info
@@ -67,18 +84,12 @@ fun String.runCommand(): String? = try {
 }
 
 
+
+
 dependencies {
-    implementation("de.easylocate:core:$easylocateVersion")
-    implementation("de.easylocate:android-sdk:$easylocateVersion")
-
-    implementation(platform(libs.androidx.compose.bom.v20240600))
-    // Activity Compose
-    implementation(libs.androidx.activity.compose.v182)
-
-    // ViewModel Compose
+    implementation("de.pinpoint.android:sdk:15.0.0")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    implementation("androidx.core:core-ktx:1.3.2")
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
