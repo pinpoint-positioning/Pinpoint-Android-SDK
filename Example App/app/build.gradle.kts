@@ -87,7 +87,7 @@ fun String.runCommand(): String? = try {
 
 
 dependencies {
-    implementation("de.pinpoint.android:sdk:15.0.0")
+    implementation("de.pinpoint.android:sdk:15.0.1")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
