@@ -93,7 +93,7 @@ Add the Pinpoint SDK to your build.gradle to use it:
 
 ``` gradle
 dependencies {
-    def sdkVersion = "15.0.0"
+    def sdkVersion = "15.0.1"
     implementation("de.pinpoint.android:sdk:$sdkVersion")
 }
 ```
