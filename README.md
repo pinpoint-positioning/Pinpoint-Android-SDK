@@ -74,7 +74,7 @@ With the Pinpoint [Starter Kit](https://www.pinpoint.de/en/products/hardware/pro
 | Android Example App | 
 |:---:|
 | <img src="images/android-demo-app-screen.png" alt="Example App" width="300"/> |
-| *Demo Android App showing local position* |
+| *Pinpoint Android SDK Example App showing local position* |
 
 
 Refer to the example app for an easy integration of the SDK. 
