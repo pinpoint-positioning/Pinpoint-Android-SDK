@@ -78,7 +78,13 @@ With the Pinpoint [Starter Kit](https://www.pinpoint.de/en/products/hardware/pro
 
 
 Refer to the example app for an easy integration of the SDK. 
-Add the following to your `local.properties` to be able to build it:
+To build the example app, make sure to add your credentials to the `local.properties`. (Refer to [Integration.](#Integration))
+
+
+## Integration
+
+1. Add the following to your `local.properties`:
+
   ```properties
     # Add your credentials to access Pinpoint's SDK repository
     PINPOINT_USER=<yourUserName>
@@ -87,9 +93,7 @@ Add the following to your `local.properties` to be able to build it:
     PINPOINT_API_KEY=<yourLicenseKey>
   ```
 
-
-## Integration
-Add the Pinpoint SDK to your build.gradle to use it:
+2. Add the Pinpoint SDK to your `build.gradle.kts`:
 
 ``` gradle
 dependencies {
@@ -97,6 +101,26 @@ dependencies {
     implementation("de.pinpoint.android:sdk:$sdkVersion")
 }
 ```
+
+
+3. Add the Pinpoint SDK Repository Server to the `settings.gradle.kts`:
+
+```
+    repositories {
+        google()
+        mavenCentral()
+
+        maven {
+            url = uri("https://posie.pinpoint.de:8073/repository/android_sdk_release/")
+            credentials {
+                username = repoUser
+                password = repoPassword
+            }
+        }
+    }
+```
+
+
 
 ### Required Permissions
 #### General Permissions
