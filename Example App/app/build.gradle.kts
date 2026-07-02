@@ -1,7 +1,7 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-val pinpointSdkVersion = "15.0.0"
+val pinpointSdkVersion = "15.0.1"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -87,7 +87,7 @@ fun String.runCommand(): String? = try {
 
 
 dependencies {
-    implementation("de.pinpoint.android:sdk:15.0.1")
+    implementation("de.pinpoint.android:sdk:$pinpointSdkVersion")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

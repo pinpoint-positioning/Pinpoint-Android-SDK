@@ -1,5 +1,5 @@
 
-# Pinpoint SDK
+# Pinpoint Android SDK
 
 * [Introduction](#introduction)
 
@@ -73,18 +73,12 @@ With the Pinpoint [Starter Kit](https://www.pinpoint.de/en/products/hardware/pro
 
 | Android Example App | 
 |:---:|
-| <img src="images/android-demo-app-screen.png" alt="Example App" width="300"/> |
-| *Pinpoint Android SDK Example App showing local position* |
+| <img src="images/android-demo-app-screen.png" alt="Pinpoint Android Example App showing local position and WG84 coordinates" width="300"/> |
+| *Pinpoint Android Example App showing local position and WG84 coordinates* |
 
 
 Refer to the example app for an easy integration of the SDK. 
-To build the example app, make sure to add your credentials to the `local.properties`. (Refer to [Integration.](#Integration))
-
-
-## Integration
-
-1. Add the following to your `local.properties`:
-
+Add the following to your `local.properties` to be able to build it:
   ```properties
     # Add your credentials to access Pinpoint's SDK repository
     PINPOINT_USER=<yourUserName>
@@ -93,34 +87,31 @@ To build the example app, make sure to add your credentials to the `local.proper
     PINPOINT_API_KEY=<yourLicenseKey>
   ```
 
-2. Add the Pinpoint SDK to your `build.gradle.kts`:
 
-``` gradle
-dependencies {
-    def sdkVersion = "15.0.1"
-    implementation("de.pinpoint.android:sdk:$sdkVersion")
-}
-```
-
-
-3. Add the Pinpoint SDK Repository Server to the `settings.gradle.kts`:
-
-```
-    repositories {
-        google()
-        mavenCentral()
-
-        maven {
-            url = uri("https://posie.pinpoint.de:8073/repository/android_sdk_release/")
-            credentials {
-                username = repoUser
-                password = repoPassword
+## Integration
+1. Add the Android SDK repository to your `settings.gradle.kts`:
+        
+    ```gradle
+        repositories {
+            
+            // Add this
+            maven {
+                url = uri("https://posie.pinpoint.de:8073/repository/android_sdk_release/")
+                credentials {
+                    username = <yourUserName>
+                    password = <yourPassword>
+                }
             }
         }
-    }
-```
+        ```
 
-
+2. Add the SDK to the dependencies in your `build.gradle.kts`
+    ``` gradle
+        dependencies {
+            def sdkVersion = "15.0.1"
+            implementation("de.pinpoint.android:sdk:$sdkVersion")
+        }
+    ```
 
 ### Required Permissions
 #### General Permissions
@@ -242,7 +233,7 @@ The licensing callback handles cases where offline positioning is not possible b
 
     ```kotlin
     val locationCallback = object: PinpointLocationCallback() {
-        override fun onLocationUpdate(location: Location) {
+        override fun onLocationUpdate(location: PinpointLocation) {
           // Do something with the location
         }
 
