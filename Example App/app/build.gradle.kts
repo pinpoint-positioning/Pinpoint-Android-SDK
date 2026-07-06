@@ -1,7 +1,7 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-val pinpointSdkVersion = "15.0.0"
+val pinpointSdkVersion = "15.0.1"
 
 plugins {
     alias(libs.plugins.android.application)

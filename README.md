@@ -108,7 +108,7 @@ Add the following to your `local.properties` to be able to build it:
 2. Add the SDK to the dependencies in your `build.gradle.kts`
     ``` gradle
         dependencies {
-            def sdkVersion = "15.0.0"
+            def sdkVersion = "15.0.1"
             implementation("de.pinpoint.android:sdk:$sdkVersion")
         }
     ```
@@ -233,7 +233,7 @@ The licensing callback handles cases where offline positioning is not possible b
 
     ```kotlin
     val locationCallback = object: PinpointLocationCallback() {
-        override fun onLocationUpdate(location: Location) {
+        override fun onLocationUpdate(location: PinpointLocation) {
           // Do something with the location
         }
 

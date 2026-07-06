@@ -11,11 +11,12 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import de.pinpoint.sdk.api.PinpointLocation
 import de.pinpoint.sdk.api.PinpointLocationAvailability
 import de.pinpoint.sdk.api.PinpointLocationCallback
 import de.pinpoint.sdk.api.PinpointLocationProviderClient
 import de.pinpoint.sdk.api.PinpointLocationRequest
-import de.pinpoint.sdk.api.toRelative
+
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     var isConnecting by mutableStateOf(false)
@@ -52,21 +53,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 
     val locationCallback = object: PinpointLocationCallback() {
-        override fun onLocationUpdate(location: Location) {
+        override fun onLocationUpdate(location: PinpointLocation) {
             Log.i(
                 "PinpointLocationCallbackTest",
-                "Received position: $location (relative location: ${location.toRelative()}, , callback: ${hashCode()}"
+                "Received position: $location (relative location: ${location}, , callback: ${hashCode()}"
             )
             location.apply {
                 this@MainViewModel.latitude = location.latitude
                 this@MainViewModel.longitude = location.longitude
-                val relativePosition = location.toRelative()
-                relativePosition?.let{
-                    localX = it.x
-                    localY = it.y
-                    localZ = it.z
-                    localAcc = it.accuracy.toDouble()
-                }
+                    localX = location.x
+                    localY = location.y
+                    localZ = location.z
+                    localAcc = location.accuracy.toDouble()
+
 
                 isConnected = true
                 isConnecting = false
