@@ -43,7 +43,7 @@
             android:name=".LocationForegroundService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location|connectedDevice" />
 
     </application>
 

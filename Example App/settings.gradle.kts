@@ -30,7 +30,7 @@ dependencyResolutionManagement {
         mavenCentral()
 
         maven {
-            url = uri("https://posie.pinpoint.de:8073/repository/android_sdk_release/")
+             url = uri("https://posie.pinpoint.de:8073/repository/android_sdk_release/")
             credentials {
                 username = repoUser
                 password = repoPassword
@@ -39,6 +39,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Pinpoint Android SDK"
+rootProject.name = "Pinpoint Android SDK Example App"
 include(":app")
 

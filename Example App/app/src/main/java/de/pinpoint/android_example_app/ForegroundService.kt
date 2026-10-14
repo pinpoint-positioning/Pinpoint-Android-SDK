@@ -36,7 +36,7 @@ class LocationForegroundService : Service() {
             this,
             NOTIFICATION_ID,
             notification,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         )
 
         return START_STICKY
@@ -52,10 +52,11 @@ class LocationForegroundService : Service() {
         )
 
         // Stop button
-        val stopIntent = Intent(this, LocationForegroundService::class.java).apply {
+        val stopIntent = Intent(this, MainActivity::class.java).apply {
             action = ACTION_STOP
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-        val stopPendingIntent = PendingIntent.getService(
+        val stopPendingIntent = PendingIntent.getActivity(
             this, 1, stopIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )

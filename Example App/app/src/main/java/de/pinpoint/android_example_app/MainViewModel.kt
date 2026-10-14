@@ -2,7 +2,6 @@ package de.pinpoint.android_example_app
 
 import android.app.Application
 import android.content.Intent
-import android.location.Location
 import android.os.Looper
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
@@ -30,15 +29,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var latitude by mutableDoubleStateOf(0.0)
     var longitude by mutableDoubleStateOf(0.0)
 
-    var refLatitude by mutableDoubleStateOf(50.0)
-    var refLongitude by mutableDoubleStateOf(17.0)
-    var refAzimuth  by mutableDoubleStateOf(172.0)
     var siteId by mutableStateOf("")
     var binFile by mutableStateOf<ByteArray?>(null)
     var binFileName by mutableStateOf<String?>(null)
 
+    var licenseError by mutableStateOf<String?>(null)
+
     private val TAG = "MainViewModel"
 
+
+    var isInitialized by mutableStateOf(false)
+    private var stopRequestedWhileNotInitialized = false
 
     lateinit var indoorLocationClient: PinpointLocationProviderClient
 
@@ -87,13 +88,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setIndoorClient(client: PinpointLocationProviderClient) {
         indoorLocationClient = client
+        isInitialized = true
+        if (stopRequestedWhileNotInitialized) {
+            stopPositioning()
+            stopRequestedWhileNotInitialized = false
+        }
     }
 
-
-    // Light up a LED on the TRACElet
-    fun showMe() {
-        indoorLocationClient.showMe()
-    }
 
     // Start positioning engine
 
@@ -131,6 +132,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Disconnect from device
     fun stopPositioning() {
+        if (!isInitialized) {
+            stopRequestedWhileNotInitialized = true
+            return
+        }
         Log.i(TAG, "Stop positioning")
         stopForegroundService()
         val stopTask = indoorLocationClient.removeLocationUpdates(locationCallback)

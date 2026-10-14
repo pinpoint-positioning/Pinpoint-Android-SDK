@@ -2,6 +2,7 @@ package de.pinpoint.android_example_app
 
 import android.os.Bundle
 import android.os.Looper
+import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.os.Build
 import android.net.Uri
+import android.content.Intent
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
@@ -98,6 +100,16 @@ class MainActivity : ComponentActivity() {
         
         requestRequiredPermissions()
 
+        if (intent?.action == LocationForegroundService.ACTION_STOP) {
+            viewModel.stopPositioning()
+        }
+
+        setContent {
+            MaterialTheme {
+                MainScreen(viewModel)
+            }
+        }
+
         val licensingCallback = object: PinpointLicensingCallback() {
 
             val TAG = "PinpointLicensingCallback"
@@ -125,31 +137,26 @@ class MainActivity : ComponentActivity() {
         ).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Log.i("onComplete","Set indoorClient")
-                // do something with the client
                 val client = task.result
                 viewModel.setIndoorClient(client)
                 viewModel.openDocumentLauncher = openDocumentLauncher
-                setContent {
-                    MaterialTheme {
-                        MainScreen(viewModel)
-                    }
-                }
-
-
             } else {
-                Log.w("getPinpointLocationProviderClient", "Received error ${task.exception}")
+                Log.w("getPinpointLocationProviderClient", "Error ${task.exception}")
+                viewModel.licenseError = task.exception?.message ?: "Invalid License Key"
             }
-
-
         }
-
-
-
     }
 
     override fun onDestroy() {
         super.onDestroy()
         viewModel.stopPositioning()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == LocationForegroundService.ACTION_STOP) {
+            viewModel.stopPositioning()
+        }
     }
 }
 
@@ -161,8 +168,29 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
-
+    val context = LocalContext.current
     var showStartSheet by remember { mutableStateOf(false) }
+
+    if (viewModel.licenseError != null) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("License Error") },
+            text = { Text(viewModel.licenseError ?: "Invalid License Key") },
+            confirmButton = {
+                Button(onClick = { (context as? Activity)?.finish() }) {
+                    Text("Close")
+                }
+            }
+        )
+        return
+    }
+
+    if (!viewModel.isInitialized) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -242,7 +270,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 // Show Me Button
                 if (viewModel.isConnected) {
                     FilledTonalButton(
-                        onClick = { viewModel.showMe() },
+                        onClick = {},
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
@@ -551,14 +579,6 @@ fun Wgs84Card(viewModel: MainViewModel) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { showSheet = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
 
             HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
@@ -566,65 +586,6 @@ fun Wgs84Card(viewModel: MainViewModel) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CoordinateRow("Latitude", viewModel.latitude.toString())
                 CoordinateRow("Longitude", viewModel.longitude.toString())
-            }
-        }
-    }
-
-    // Bottom Sheet
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            sheetState = sheetState
-        ) {
-            var latitude by remember { mutableStateOf(viewModel.refLatitude.toString()) }
-            var longitude by remember { mutableStateOf(viewModel.refLongitude.toString()) }
-            var azi by remember { mutableStateOf(viewModel.refAzimuth.toString()) }
-
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("Edit Coordinates", style = MaterialTheme.typography.titleMedium)
-
-                OutlinedTextField(
-                    value = latitude,
-                    onValueChange = { latitude = it },
-                    label = { Text("Latitude") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                OutlinedTextField(
-                    value = longitude,
-                    onValueChange = { longitude = it },
-                    label = { Text("Longitude") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                OutlinedTextField(
-                    value = azi,
-                    onValueChange = { azi = it },
-                    label = { Text("Azimuth") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                Button(
-                    onClick = {
-                        viewModel.refLatitude = latitude.toDouble()
-                        viewModel.refLongitude = longitude.toDouble()
-                        viewModel.refAzimuth = azi.toDouble()
-                        showSheet = false
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Save")
-                }
             }
         }
     }

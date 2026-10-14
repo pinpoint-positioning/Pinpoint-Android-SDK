@@ -1,7 +1,8 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-val pinpointSdkVersion = "15.0.1"
+val pinpointSdkVersion = "15.0.5"
+
 
 plugins {
     alias(libs.plugins.android.application)
@@ -26,7 +27,7 @@ android {
         minSdk = 29
         targetSdk = 37
         versionCode = 2
-        versionName = "15.0.0"
+        versionName = pinpointSdkVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -63,7 +64,11 @@ android {
         compose = true
         buildConfig = true
     }
+
     compileSdkMinor = 0
+
+
+
 }
 
 kotlin {
